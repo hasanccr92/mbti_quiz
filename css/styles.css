@@ -1097,8 +1097,8 @@ body::before {
     text-decoration: underline;
 }
 
-/* Social Share Section */
-.share-section {
+/* Share Card Section */
+.share-card-section {
     background: var(--bg-card);
     border-radius: var(--radius-md);
     padding: var(--spacing-lg);
@@ -1107,87 +1107,147 @@ body::before {
     text-align: center;
 }
 
-.share-section h3 {
+.share-card-section h3 {
     font-size: 1.1rem;
     font-weight: 600;
     color: var(--text-primary);
     margin-bottom: var(--spacing-xs);
 }
 
-.share-section>p {
+.share-card-section>p {
     font-size: 0.9rem;
     color: var(--text-muted);
     margin-bottom: var(--spacing-md);
 }
 
-.share-buttons {
+/* Card Preview Container */
+.share-card-preview {
+    margin: var(--spacing-md) 0;
     display: flex;
     justify-content: center;
-    gap: var(--spacing-sm);
-    flex-wrap: wrap;
+}
+
+/* The Share Card itself */
+.share-card {
+    width: 400px;
+    max-width: 100%;
+    background: linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 100%);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    border: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.card-type-badge {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: 6px;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     margin-bottom: var(--spacing-sm);
 }
 
-.share-btn {
-    display: inline-flex;
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.card-oneliner {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.5;
+}
+
+/* Card Dimension Bars */
+.card-dimensions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+}
+
+.card-dim-row {
+    background: rgba(22, 33, 62, 0.8);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-sm);
+}
+
+.card-dim-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+}
+
+.card-dim-left {
+    color: var(--text-primary);
+}
+
+.card-dim-left strong {
+    color: var(--accent-green);
+}
+
+.card-dim-right {
+    color: var(--text-muted);
+}
+
+.card-dim-right strong {
+    color: var(--text-muted);
+}
+
+.card-dim-bar {
+    height: 8px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.card-dim-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease;
+}
+
+/* CTA Section */
+.card-cta {
+    display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: var(--spacing-md);
-    min-width: 90px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all var(--transition-normal);
+    gap: 4px;
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+}
+
+.cta-text {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.cta-link {
     font-size: 0.8rem;
-    font-weight: 500;
-}
-
-.share-btn svg {
-    width: 28px;
-    height: 28px;
-}
-
-.share-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-}
-
-/* Facebook */
-.share-btn.facebook:hover {
-    background: rgba(24, 119, 242, 0.15);
-    border-color: #1877f2;
-    color: #1877f2;
-}
-
-/* Instagram gradient effect */
-.share-btn.instagram:hover {
-    background: linear-gradient(45deg, rgba(253, 29, 29, 0.15), rgba(131, 58, 180, 0.15), rgba(252, 175, 69, 0.15));
-    border-color: #e1306c;
-    color: #e1306c;
-}
-
-/* Snapchat */
-.share-btn.snapchat:hover {
-    background: rgba(255, 252, 0, 0.15);
-    border-color: #fffc00;
-    color: #fffc00;
-}
-
-/* Copy Link */
-.share-btn.copy-link:hover {
-    background: rgba(102, 126, 234, 0.15);
-    border-color: var(--accent-purple);
     color: var(--accent-purple);
+}
+
+/* Share Actions */
+.share-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    margin-top: var(--spacing-md);
 }
 
 .share-hint {
     font-size: 0.85rem;
     color: var(--accent-green);
     min-height: 1.2em;
+    margin-top: var(--spacing-sm);
     transition: opacity var(--transition-fast);
 }
 
@@ -1330,14 +1390,12 @@ body::before {
         justify-content: center;
     }
 
-    .share-buttons {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: var(--spacing-sm);
+    .share-actions {
+        flex-direction: column;
     }
 
-    .share-btn {
-        min-width: auto;
+    .share-card {
+        width: 100%;
     }
 }
 

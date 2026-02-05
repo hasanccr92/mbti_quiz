@@ -67,10 +67,9 @@ const App = {
         });
 
         // Social share buttons
-        document.getElementById('share-facebook').addEventListener('click', () => this.shareToFacebook());
-        document.getElementById('share-instagram').addEventListener('click', () => this.shareToInstagram());
-        document.getElementById('share-snapchat').addEventListener('click', () => this.shareToSnapchat());
-        document.getElementById('share-copy').addEventListener('click', () => this.copyShareLink());
+        document.getElementById('share-card-btn').addEventListener('click', () => this.shareCard());
+        document.getElementById('download-card-btn').addEventListener('click', () => this.downloadCard());
+        document.getElementById('copy-card-btn').addEventListener('click', () => this.copyCardToClipboard());
     },
 
     // Handle mode selection and start quiz
@@ -220,6 +219,9 @@ const App = {
 
         // Store results for export
         this.state.currentResults = { results, profile };
+
+        // Populate share card
+        this.populateShareCard();
     },
 
     // Render dimension bars
@@ -628,12 +630,6 @@ ${profile.social}
         URL.revokeObjectURL(url);
     },
 
-    // Get share text for social media
-    getShareText() {
-        const { results, profile } = this.state.currentResults;
-        return `🧠 I'm an ${results.typeCode} - "${profile.title}"!\n\nDiscover your personality type: https://hasanccr92.github.io/mbti_quiz/`;
-    },
-
     // Get share URL
     getShareUrl() {
         return 'https://hasanccr92.github.io/mbti_quiz/';
@@ -649,66 +645,264 @@ ${profile.social}
         setTimeout(() => hint.classList.remove('visible'), 3000);
     },
 
-    // Share to Facebook
-    shareToFacebook() {
+    // Populate the share card with current results
+    populateShareCard() {
         const { results, profile } = this.state.currentResults;
-        const text = encodeURIComponent(`🧠 I'm an ${results.typeCode} - "${profile.title}"! Discover your personality type!`);
-        const url = encodeURIComponent(this.getShareUrl());
 
-        // Facebook share dialog  
-        const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`;
-        window.open(shareUrl, '_blank', 'width=600,height=400');
+        // Update card content
+        document.getElementById('card-type-badge').textContent = results.typeCode;
+        document.getElementById('card-title').textContent = profile.title;
+        document.getElementById('card-oneliner').textContent = profile.oneLiner;
+
+        // Generate dimension bars
+        const dimensions = [
+            { dim: 'EI', left: 'E', right: 'I', leftName: 'Extraversion', rightName: 'Introversion', color: '#38ef7d' },
+            { dim: 'SN', left: 'S', right: 'N', leftName: 'Sensing', rightName: 'Intuition', color: '#f2994a' },
+            { dim: 'TF', left: 'T', right: 'F', leftName: 'Thinking', rightName: 'Feeling', color: '#00d4ff' },
+            { dim: 'JP', left: 'J', right: 'P', leftName: 'Judging', rightName: 'Perceiving', color: '#ffd93d' }
+        ];
+
+        const container = document.getElementById('card-dimensions');
+        container.innerHTML = dimensions.map(d => {
+            const percent = results.percents[d.dim];
+            const leftPercent = Math.round(percent * 100);
+            const rightPercent = 100 - leftPercent;
+
+            return `
+                <div class="card-dim-row">
+                    <div class="card-dim-labels">
+                        <span class="card-dim-left"><strong>${d.left}</strong> ${d.leftName} ${leftPercent}%</span>
+                        <span class="card-dim-right">${rightPercent}% ${d.rightName} <strong>${d.right}</strong></span>
+                    </div>
+                    <div class="card-dim-bar">
+                        <div class="card-dim-fill" style="width: ${leftPercent}%; background: ${d.color};"></div>
+                    </div>
+                </div>
+            `;
+        }).join('');
     },
 
-    // Share to Instagram (copy for story)
-    shareToInstagram() {
+    // Generate image from the card using Canvas
+    async generateCardImage() {
+        const card = document.getElementById('share-card');
         const { results, profile } = this.state.currentResults;
-        const text = `🧠 My personality type: ${results.typeCode}\n"${profile.title}"\n\n✨ Take the quiz: ${this.getShareUrl()}`;
 
-        navigator.clipboard.writeText(text).then(() => {
-            this.showShareHint('✨ Copied! Open Instagram and paste in your Story');
-        }).catch(() => {
-            this.fallbackCopy(text);
-            this.showShareHint('✨ Copied! Open Instagram and paste in your Story');
+        // Create canvas with card dimensions
+        const canvas = document.createElement('canvas');
+        const scale = 2; // For higher resolution
+        canvas.width = 400 * scale;
+        canvas.height = 520 * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(scale, scale);
+
+        // Background gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, 520);
+        gradient.addColorStop(0, '#0f0f1a');
+        gradient.addColorStop(1, '#1a1a2e');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 400, 520);
+
+        // Border
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(0, 0, 400, 520);
+
+        // Type badge
+        const typeGradient = ctx.createLinearGradient(0, 0, 200, 0);
+        typeGradient.addColorStop(0, '#667eea');
+        typeGradient.addColorStop(1, '#764ba2');
+        ctx.font = 'bold 48px Inter, sans-serif';
+        ctx.fillStyle = typeGradient;
+        ctx.textAlign = 'center';
+        ctx.fillText(results.typeCode, 200, 60);
+
+        // Title
+        ctx.font = '600 22px Inter, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(profile.title, 200, 100);
+
+        // One-liner (word wrap)
+        ctx.font = '400 14px Inter, sans-serif';
+        ctx.fillStyle = '#a0a0b8';
+        this.wrapText(ctx, profile.oneLiner, 200, 130, 360, 20);
+
+        // Dimension bars
+        const dimensions = [
+            { dim: 'EI', left: 'E', right: 'I', leftName: 'Extraversion', rightName: 'Introversion', color: '#38ef7d' },
+            { dim: 'SN', left: 'S', right: 'N', leftName: 'Sensing', rightName: 'Intuition', color: '#f2994a' },
+            { dim: 'TF', left: 'T', right: 'F', leftName: 'Thinking', rightName: 'Feeling', color: '#00d4ff' },
+            { dim: 'JP', left: 'J', right: 'P', leftName: 'Judging', rightName: 'Perceiving', color: '#ffd93d' }
+        ];
+
+        let y = 190;
+        dimensions.forEach(d => {
+            const percent = results.percents[d.dim];
+            const leftPercent = Math.round(percent * 100);
+            const rightPercent = 100 - leftPercent;
+
+            // Row background
+            ctx.fillStyle = 'rgba(22, 33, 62, 0.8)';
+            this.roundRect(ctx, 20, y, 360, 60, 8);
+            ctx.fill();
+
+            // Labels
+            ctx.font = 'bold 12px Inter, sans-serif';
+            ctx.fillStyle = d.color;
+            ctx.textAlign = 'left';
+            ctx.fillText(d.left, 30, y + 22);
+
+            ctx.font = '400 12px Inter, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(` ${d.leftName} ${leftPercent}%`, 42, y + 22);
+
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#6b6b80';
+            ctx.fillText(`${rightPercent}% ${d.rightName} `, 358, y + 22);
+            ctx.font = 'bold 12px Inter, sans-serif';
+            ctx.fillText(d.right, 370, y + 22);
+
+            // Bar background
+            ctx.fillStyle = '#1a1a2e';
+            this.roundRect(ctx, 30, y + 35, 340, 10, 5);
+            ctx.fill();
+
+            // Bar fill
+            ctx.fillStyle = d.color;
+            const fillWidth = (leftPercent / 100) * 340;
+            this.roundRect(ctx, 30, y + 35, fillWidth, 10, 5);
+            ctx.fill();
+
+            y += 70;
         });
+
+        // CTA section
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        ctx.fillRect(20, 470, 360, 1);
+
+        ctx.font = '600 16px Inter, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText('🔗 Find Yours', 200, 495);
+
+        ctx.font = '400 12px Inter, sans-serif';
+        ctx.fillStyle = '#667eea';
+        ctx.fillText('hasanccr92.github.io/mbti_quiz', 200, 512);
+
+        return canvas;
     },
 
-    // Share to Snapchat (copy for story)
-    shareToSnapchat() {
-        const { results, profile } = this.state.currentResults;
-        const text = `🧠 I'm an ${results.typeCode}!\n"${profile.title}"\n\nFind yours: ${this.getShareUrl()}`;
+    // Helper: Wrap text for canvas
+    wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+        const words = text.split(' ');
+        let line = '';
 
-        navigator.clipboard.writeText(text).then(() => {
-            this.showShareHint('👻 Copied! Open Snapchat and paste in your Story');
-        }).catch(() => {
-            this.fallbackCopy(text);
-            this.showShareHint('👻 Copied! Open Snapchat and paste in your Story');
-        });
+        for (let n = 0; n < words.length; n++) {
+            const testLine = line + words[n] + ' ';
+            const metrics = ctx.measureText(testLine);
+            if (metrics.width > maxWidth && n > 0) {
+                ctx.fillText(line, x, y);
+                line = words[n] + ' ';
+                y += lineHeight;
+            } else {
+                line = testLine;
+            }
+        }
+        ctx.fillText(line, x, y);
     },
 
-    // Copy share link to clipboard
-    copyShareLink() {
-        const { results, profile } = this.state.currentResults;
-        const text = `I'm an ${results.typeCode} - "${profile.title}"! 🧠\n\nDiscover your personality type: ${this.getShareUrl()}`;
-
-        navigator.clipboard.writeText(text).then(() => {
-            this.showShareHint('🔗 Link copied to clipboard!');
-        }).catch(() => {
-            this.fallbackCopy(text);
-            this.showShareHint('🔗 Link copied to clipboard!');
-        });
+    // Helper: Draw rounded rectangle
+    roundRect(ctx, x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
     },
 
-    // Fallback copy method for older browsers
-    fallbackCopy(text) {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
+    // Download card as PNG image
+    async downloadCard() {
+        try {
+            const canvas = await this.generateCardImage();
+            const link = document.createElement('a');
+            link.download = `personality-${this.state.currentResults.results.typeCode}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            this.showShareHint('📥 Card downloaded! Share it on your socials!');
+        } catch (error) {
+            console.error('Error generating card:', error);
+            this.showShareHint('❌ Error generating card. Please try again.');
+        }
+    },
+
+    // Copy card image to clipboard
+    async copyCardToClipboard() {
+        try {
+            const canvas = await this.generateCardImage();
+            canvas.toBlob(async (blob) => {
+                try {
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ 'image/png': blob })
+                    ]);
+                    this.showShareHint('📋 Card copied! Paste it anywhere!');
+                } catch (err) {
+                    // Fallback: download instead
+                    this.downloadCard();
+                    this.showShareHint('📥 Copied not supported, downloading instead...');
+                }
+            }, 'image/png');
+        } catch (error) {
+            console.error('Error copying card:', error);
+            this.showShareHint('❌ Error copying card. Please try downloading.');
+        }
+    },
+
+    // Share card directly to social apps using Web Share API
+    async shareCard() {
+        try {
+            const canvas = await this.generateCardImage();
+            const { results, profile } = this.state.currentResults;
+
+            // Convert canvas to blob
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            const file = new File([blob], `personality-${results.typeCode}.png`, { type: 'image/png' });
+
+            // Check if Web Share API with files is supported
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: `I'm an ${results.typeCode} - ${profile.title}!`,
+                    text: `🧠 Discover your personality type! Take the quiz: ${this.getShareUrl()}`,
+                    files: [file]
+                });
+                this.showShareHint('✨ Shared successfully!');
+            } else if (navigator.share) {
+                // Fallback: Share without image (text only)
+                await navigator.share({
+                    title: `I'm an ${results.typeCode} - ${profile.title}!`,
+                    text: `🧠 I'm an ${results.typeCode} - "${profile.title}"! Discover your personality type!`,
+                    url: this.getShareUrl()
+                });
+                this.showShareHint('✨ Shared! Download the card to attach the image.');
+            } else {
+                // Web Share API not supported, fallback to download
+                this.downloadCard();
+                this.showShareHint('📥 Sharing not supported on this device. Card downloaded!');
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                // User cancelled sharing
+                return;
+            }
+            console.error('Error sharing card:', error);
+            // Fallback to download
+            this.downloadCard();
+            this.showShareHint('📥 Sharing failed. Card downloaded instead!');
+        }
     },
 
     // Retake quiz
